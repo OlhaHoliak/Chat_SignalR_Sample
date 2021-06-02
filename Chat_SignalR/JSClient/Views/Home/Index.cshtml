@@ -1,0 +1,195 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<section class="chat">
+    <div class="form-wrapper">
+        <div class="wrapper state-wrapper">
+            <p>State:</p>
+            <p id="conState">Disconnected</p>
+            <button id="connectButton" type="button" onclick="connect()">Connect</button>
+        </div>
+        <div class="wrapper receiverUserId-wrapper">
+            <label for="wrapper receiverUserId">receiverUserId</label>
+            <input type="text" id="receiverUserId">
+        </div>
+        <div class="wrapper workshopId-wrapper">
+            <label for="wrapper workshopId">workshopId</label>
+            <input type="text" id="workshopId">
+        </div>
+        <div class="wrapper chatRoomId-wrapper">
+            <label for="wrapper chatRoomId">chatRoomId</label>
+            <input type="text" id="chatRoomId">
+        </div>
+        <div class="wrapper message-wrapper">
+            <label for="wrapper message">Text</label>
+            <textarea id="message"></textarea>
+            <button type="button" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <div class="messages-wrapper">
+        <div id="messages-content">
+
+        </div>
+    </div>
+
+</section>
+
+
+@section Styles
+{
+    <style>
+        p {
+            margin-bottom: 0
+        }
+
+        .chat {
+            display: flex;
+            justify-content: space-between
+        }
+
+        .form-wrapper {
+            width: 30%
+        }
+
+            .form-wrapper .wrapper {
+                display: flex;
+                align-items: center;
+                margin-bottom: 15px;
+                justify-content: space-between;
+            }
+
+        .login-wrapper, .message-wrapper {
+            flex-wrap: wrap;
+        }
+
+        .btn-wrapper {
+            width: 100%;
+            padding-top: 15px;
+        }
+
+            .btn-wrapper button {
+                float: right;
+                width: 30%;
+                justify-content: flex-end
+            }
+
+                .btn-wrapper button:last-child {
+                    margin-right: 10px
+                }
+
+        .message-wrapper {
+            align-items: flex-start;
+        }
+
+            .message-wrapper label {
+                margin-right: 15px;
+                width: 10%;
+            }
+
+            .message-wrapper textarea {
+                width: 80%;
+            }
+
+            .message-wrapper button {
+                margin-left: auto;
+                margin-top: 15px;
+            }
+
+        .messages-wrapper {
+            width: 65%;
+            display: block;
+        }
+
+            .messages-wrapper #messages-content {
+                border: 1px solid #000;
+                min-height: 500px;
+            }
+    </style>
+}
+
+@section Scripts
+{
+    <script type="text/javascript" src="./js/signalr.min.js"></script>
+    <script type="text/javascript">
+        let token = window.localStorage.getItem('token');
+        
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(`http://localhost:5000/chathub?access_token=${token}`)
+            .withAutomaticReconnect()
+            .build();
+        
+        // when Hub sends messages from SentTestMessage()
+        connection.on('ReceiveMessageInChatGroup', (createdMessageDto) => {
+            console.log('ReceiveMessageInChatGroup', createdMessageDto);
+            appendMessage(createdMessageDto.Text, 'black');
+        });
+
+        connection.onclose(error => {
+            console.log('Connection closed. ', error)
+        });
+
+        connection.onreconnecting(error => {
+            console.log('Connection reconnecting. ', error);
+        });
+
+        connection.onreconnected(connectionId => {
+            console.log('Connectin reconnected with id: ', connectionId);
+        });
+
+        // print received messages from hub
+        function appendMessage(message, color) {
+            document.querySelector('#messages-content')
+                .insertAdjacentHTML("beforeend", `<div style="color:${color}"><p>Sender: </p><p>Text: ${message}</p></div><br>`);
+        }
+
+
+        // start connection
+        async function connect() {
+            if (connection.state === 'Disconnected') {
+                try {
+                    await connection.start();
+                }
+                catch (error) {
+                    console.log(error);
+                }
+                if (connection.state === 'Connected') {
+                    document.querySelector('#conState').textContent = 'Connected';
+                    document.querySelector('#conState').style.color = 'green';
+                    document.querySelector('#connectButton').textContent = 'Disconnect';
+                }
+            } else if (connection.state === 'Connected') {
+                await connection.stop();
+                document.querySelector('#conState').textContent = 'Disconnected';
+                document.querySelector('#conState').style.color = 'red';
+                document.querySelector('#connectButton').textContent = 'Connect';
+            }
+        };
+
+        // call hub's method "SendTestMessage"
+        async function sendMessage() {
+            if (connection.state === 'Connected') {
+                let textArea = document.querySelector('#message');
+                let textArea2 = document.querySelector('#receiverUserId');
+                let textArea3 = document.querySelector('#workshopId');
+                let textArea4 = document.querySelector('#chatRoomId');
+                let chatNewMessageDto = {
+                    Text: textArea.value,
+                    ReceiverUserId: textArea2.value,
+                    WorkshopId: textArea3.value,
+                    ChatRoomId: textArea4.value,
+                };
+                console.log(chatNewMessageDto);
+
+                try {
+                    await connection.invoke('SendMessageToOthersInGroup', JSON.stringify(chatNewMessageDto));
+                    appendMessage(chatNewMessageDto.Text, 'green');
+                }
+                catch (error) {
+                    console.log(error);
+                }
+                document.querySelector('#message').value = '';
+            }
+        }
+    </script>
+}
