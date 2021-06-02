@@ -120,7 +120,7 @@
             .build();
         
         // when Hub sends messages from SentTestMessage()
-        connection.on('ReceiveMessageInChatGroup', (createdMessageDto) => {
+        connection.on('ReceiveMessageInChatGroup', function (createdMessageDto) {
             console.log('ReceiveMessageInChatGroup', createdMessageDto);
             appendMessage(createdMessageDto.Text, 'black');
         });
@@ -166,7 +166,7 @@
             }
         };
 
-        // call hub's method "SendTestMessage"
+        // call hub's method "SendMessageToOthersInGroup"
         async function sendMessage() {
             if (connection.state === 'Connected') {
                 let textArea = document.querySelector('#message');
@@ -177,7 +177,7 @@
                     Text: textArea.value,
                     ReceiverUserId: textArea2.value,
                     WorkshopId: textArea3.value,
-                    ChatRoomId: textArea4.value,
+                    ChatRoomId: textArea4.value.length ? textArea4.value : 0,
                 };
                 console.log(chatNewMessageDto);
 
