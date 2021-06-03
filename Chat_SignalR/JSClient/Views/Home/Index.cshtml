@@ -122,7 +122,7 @@
         // when Hub sends messages from SentTestMessage()
         connection.on('ReceiveMessageInChatGroup', function (createdMessageDto) {
             console.log('ReceiveMessageInChatGroup', createdMessageDto);
-            appendMessage(createdMessageDto.Text, 'black');
+            appendMessage(JSON.parse(createdMessageDto).Text, 'black');
         });
 
         connection.onclose(error => {
