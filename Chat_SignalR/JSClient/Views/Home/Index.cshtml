@@ -9,17 +9,13 @@
             <p id="conState">Disconnected</p>
             <button id="connectButton" type="button" onclick="connect()">Connect</button>
         </div>
-        <div class="wrapper receiverUserId-wrapper">
-            <label for="wrapper receiverUserId">receiverUserId</label>
-            <input type="text" id="receiverUserId">
-        </div>
         <div class="wrapper workshopId-wrapper">
             <label for="wrapper workshopId">workshopId</label>
             <input type="text" id="workshopId">
         </div>
-        <div class="wrapper chatRoomId-wrapper">
-            <label for="wrapper chatRoomId">chatRoomId</label>
-            <input type="text" id="chatRoomId">
+        <div class="wrapper parentId-wrapper">
+            <label for="wrapper parentId">parentId</label>
+            <input type="text" id="parentId">
         </div>
         <div class="wrapper message-wrapper">
             <label for="wrapper message">Text</label>
@@ -115,7 +111,7 @@
         let token = window.localStorage.getItem('token');
         
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl(`http://localhost:5000/chathub?access_token=${token}`)
+            .withUrl(`http://localhost:5000/chathub/workshop?access_token=${token}`)
             .withAutomaticReconnect()
             .build();
         
@@ -170,19 +166,17 @@
         async function sendMessage() {
             if (connection.state === 'Connected') {
                 let textArea = document.querySelector('#message');
-                let textArea2 = document.querySelector('#receiverUserId');
                 let textArea3 = document.querySelector('#workshopId');
-                let textArea4 = document.querySelector('#chatRoomId');
+                let textArea4 = document.querySelector('#parentId');
                 let chatNewMessageDto = {
                     Text: textArea.value,
-                    ReceiverUserId: textArea2.value,
                     WorkshopId: textArea3.value,
-                    ChatRoomId: textArea4.value.length ? textArea4.value : 0,
+                    ParentId: textArea4.value,
                 };
                 console.log(chatNewMessageDto);
 
                 try {
-                    await connection.invoke('SendMessageToOthersInGroup', JSON.stringify(chatNewMessageDto));
+                    await connection.invoke('SendMessageToOthersInGroupAsync', JSON.stringify(chatNewMessageDto));
                     appendMessage(chatNewMessageDto.Text, 'green');
                 }
                 catch (error) {
